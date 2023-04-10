@@ -1,0 +1,173 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Indoor Replacement Draft
+    </title>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.26/esri/themes/light/main.css"
+    />
+    <script>
+        var esriConfig = {portalUrl: "https://gis.umd.edu/portal"};
+    </script>
+    <script src="https://js.arcgis.com/4.26/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+
+    </style>
+
+    <script>
+    var webmap, view, userId;
+      require([
+        "esri/WebMap",
+        "esri/views/MapView",
+        "esri/widgets/FloorFilter",
+        "esri/identity/OAuthInfo",
+        "esri/identity/IdentityManager",
+        "esri/portal/Portal",
+        "esri/widgets/Search",
+        "esri/layers/FeatureLayer",
+        "esri/widgets/Directions",
+        "esri/layers/RouteLayer"
+      ], function (WebMap, MapView, FloorFilter, OAuthInfo, esriId, Portal, Search, FeatureLayer, Directions, RouteLayer) {
+
+        esriConfig.apiKey = "AAPKb542c7b200e94df98c4e2994a85bc367JgSV-agX51_h-rXYYailJM8qS98YiSoS0YAvTD1nGGdvF_NLBqvK4p9mXV_DAlFd";
+
+        info = new OAuthInfo({
+            appId: "2xFnGBlJAdkTI8kc",
+            portalUrl: "https://gis.umd.edu/indoors",
+            popup:false
+        });
+        esriId.registerOAuthInfos([info]);
+        esriId.checkSignInStatus(info.portalUrl+"/sharing").then(function(){
+
+            webmap = new WebMap({
+                portalItem: {
+                    id: "1f627c3c79844438bdc1431b4a371d04",
+                    portal: {url: "https://gis.umd.edu/indoors"}
+                }
+            });
+
+            view = new MapView({container: "viewDiv",map: webmap});
+            view.when(() => {
+                const floorFilter = new FloorFilter({view: view, id: "floor-filter"});
+                view.ui.add(floorFilter, "top-trailing");
+            });
+
+            // create a FeatureLayer from Units
+            featureLayerUnits = new FeatureLayer({
+              url: "https://gis.umd.edu/iserver/rest/services/Hosted/SenecaFloorplans_WFL1/FeatureServer/13",
+              popupTemplate: {
+                title: "{NAME}"
+              }
+            });
+
+            webmap.add(featureLayerUnits);
+
+            // create a search widget
+            search = new Search({ 
+              view: view,
+              allPlaceholder: "Units",
+              includeDefaultSources: false,
+              includeDefaultSources: false,
+              locationEnabled: false,
+              minSuggestCharacters: 1,
+              sources: [
+                {
+                  layer: featureLayerUnits,
+                  name: "Unit ID",
+                  searchFields: ["name"],
+                  outFields: ["*"],
+                  suggestionEnabled: true,
+                  suggestionTemplate: "{name}",
+                  exactMatch: false,
+                  placeholder: "example: 15",
+                  zoomScale: 50,
+                }
+              ]
+            });
+
+            // functions to highlight a searched room and change the floor
+            search.on("select-result", function(event) {
+              // console.log(event)
+              // get the selected feature from the search results
+              const feature = event.result.feature;
+
+              // get the floor level of the selected feature
+              const floorLevel = feature.attributes.level_id;
+
+              // Update the floor filter widget to show the selected floor
+              view.whenLayerView(featureLayerUnits).then(function(layerView) {
+                const floorFilter = view.ui.find("floor-filter");
+                floorFilter.level = floorLevel;
+              });
+            });
+
+            view.ui.add(search, {
+              position: "top-left",
+              index: 0
+            });
+
+            const routeLayer = new RouteLayer({
+              url: "https://gis.umd.edu/iserver/rest/services/RoutingNetworks/Route_and_Closest_Facility/NAServer/Route"
+            });
+
+            // direction Widget
+            
+            let directions = new Directions({
+              view: view,
+              layer: routeLayer,
+              apiKey: esriConfig.apiKey
+            }) 
+
+            /* directions.on("search", function(event) {
+              console.log(event)
+              // get the start and end points from the search results
+              let startPoint = null;
+              let endPoint = null;
+              event.results.forEach(function(result) {
+                let feature = results.results[0].feature;
+                if (feature) {
+                  if (!startPoint) {
+                    startPoint = feature;
+                  } else if (!endPoint) {
+                    endPoint = feature;
+                  }
+                }
+              });
+
+              if (startPoint && endPoint) {
+                directions.viewModel.set("startPoint", startPoint.geometry);
+                directions.viewModel.set("endPoint", endPoint.geometry);
+              }
+
+            }); */
+
+            view.ui.add(directions, {
+              position: "bottom-left"
+            });
+
+        }).catch(esriId.getCredential(info.portalUrl+"/sharing")); 
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>
