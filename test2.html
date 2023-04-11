@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Directions Widget Example</title>
+
+  <!-- ArcGIS API for JavaScript CSS -->
+  <link rel="stylesheet" href="https://js.arcgis.com/4.21/esri/themes/light/main.css" />
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    #directions {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 50;
+      background-color: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+
+  <!-- ArcGIS API for JavaScript library -->
+  <script src="https://js.arcgis.com/4.21/"></script>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/widgets/Directions",
+      "esri/widgets/Search"
+    ], function (Map, MapView, Directions, Search) {
+
+      // Create a new map
+      const map = new Map({
+        basemap: "streets-navigation-vector"
+      });
+
+      // Create a new map view
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [-118.244, 34.052],
+        zoom: 12
+      });
+
+      // Create a new Directions widget
+      const directionsWidget = new Directions({
+        view: view,
+        routeServiceUrl: "https://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World",
+        searchProperties: {
+          source: {
+            layer: yourLayer, // The layer to search for the start stop
+            outFields: ["room_number"] // The fields to include in the search results
+          },
+          placeholder: "Enter start location", // The placeholder text for the start stop search input
+          suffix: " Chicago", // The suffix text to append to the search string when searching for the start stop
+          minSuggestCharacters: 3, // The minimum number of characters to enter before displaying suggestions for the start stop
+          maxSuggestions: 10, // The maximum number of suggestions to display for the start stop
+          minDistance: 50, // The minimum distance in meters from the start stop to the closest suggested location
+          resultFormat: "StreetAddress" // The format of the result for the start stop
+        }
+      });
+
+      // Create a new Search widget for the destination
+      const destinationSearch = new Search({
+        view: view,
+        sources: [{
+          layer: yourLayer, // The layer to search for the end stop
+          outFields: ["room_number"] // The fields to include in the search results
+        }],
+        placeholder: "Enter end location", // The placeholder text for the end stop search input
+        suffix: " Chicago", // The suffix text to append to the search string when searching for the end stop
+        minSuggestCharacters: 3, // The minimum number of characters to enter before displaying suggestions for the end stop
+        maxSuggestions: 10, // The maximum number of suggestions to display
