@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Directions Widget</title>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.20/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.20/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/widgets/Directions",
+        "esri/layers/FeatureLayer",
+        "esri/tasks/Locator",
+        "dojo/domReady!"
+      ], function (Map, MapView, Directions, FeatureLayer, Locator) {
+
+        // Define the map
+        const map = new Map({
+          basemap: "streets-navigation-vector"
+        });
+
+        // Define the view
+        const view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [-87.6298, 41.8781],
+          zoom: 12
+        });
+
+        // Define the feature layer
+        const featureLayer = new FeatureLayer({
+          url: "<URL TO YOUR FEATURE LAYER>"
+        });
+
+        // Define the locator task
+        const locator = new Locator({
+          url: "<URL TO YOUR LOCATOR SERVICE>"
+        });
+
+        // Define the directions widget
+        const directions = new Directions({
+          view: view,
+          routeServiceUrl: "<URL TO YOUR ROUTE SERVICE>",
+          searchProperties: {
+            source: {
+              layer: featureLayer,
+              outFields: ["room_number"]
+            },
+            placeholder: "Enter start location",
+            suffix: " Chicago",
+            minSuggestCharacters: 3,
+            maxSuggestions: 10,
+            minDistance: 50,
+            resultFormat: "StreetAddress"
+          }
+        });
+
+        // Add the directions widget to the view
+        view.ui.add(directions, "top-right");
+
+        // Add a submit event listener to the form
+        const form = document.getElementById("directionsForm");
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          calculateRoute(directions);
+        });
+
+        function calculateRoute(directions) {
+          // Get the start and end locations from the form
+          const startLocation = document.getElementById("startLocation").value;
+          const endLocation = document.getElementById("endLocation").value;
+
+          // Set the stops for the route
+          directions.stops = {
+            features: [
+              {
+                attributes: { Name: "Start Location" },
+                geometry: null,
+                address: { SingleLine: startLocation }
+              },
+              {
+                attributes: { Name: "End Location" },
+                geometry: null,
+                address: { SingleLine: endLocation }
+              }
+            ]
+          };
+
+          // Calculate the route
+          directions.calculateDirections().then(function (result) {
+            console.log("Route calculated:", result);
+          });
+        }
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+
+    <form id="directionsForm">
+      <label for="startLocation">Start Location:</label>
+      <input type="text" id="startLocation" name="startLocation" required
